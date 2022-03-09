@@ -356,7 +356,7 @@ WORD WINAPI DisplayDib(
         HWND parhwnd = GetActiveWindow();
         GetWindowTextA(parhwnd, title, 32);
         if (title[0] == '\0') GetModuleName16(GetCurrentTask(), title, 32);
-        ddhwnd = CreateWindowExA(0, "DispDibClass", title, WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT,
+        ddhwnd = CreateWindowExA(0, "DispDibClass", title, WS_POPUP | WS_VISIBLE, CW_USEDEFAULT,
                         CW_USEDEFAULT, 640, 480, parhwnd, NULL, GetModuleHandleA(NULL), NULL);
         if (!ddhwnd)
         {
@@ -366,6 +366,8 @@ WORD WINAPI DisplayDib(
         oldproc = DOSVM_SetBuiltinVector(0x10, ddInt10Handler);
         for (int i = 0; i < 0x20; i++)
             DOSVM_setportcb(ddVGAoutHandler, ddVGAinHandler, i + 0x3c0, &oldout[i], &oldin[i]);
+		SetWindowPos(ddhwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		ShowCursor(FALSE);
         return DISPLAYDIB_NOERROR;
     }
     else if ((owner != task) || !owner)
