@@ -45,6 +45,7 @@ static HANDLE running = 0;
 static BOOL vsync = FALSE;
 static BOOL hsync = FALSE;
 static LPVOID vram;
+static BYTE dacidx;
 
 static void draw()
 {
@@ -211,9 +212,29 @@ static DWORD WINAPI ddVGAinHandler(int port, int size)
         return oldin[port - 0x3c0] ? oldin[port - 0x3c0](port, size) : 0;
 
     DWORD ret = -1;
+	static BYTE dacclr = 0;
 
     switch (port)
     {
+		case 0x3c9:
+		{
+			RGBQUAD retRGB;
+			GetDIBColorTable(dddc, dacidx, 1, &retRGB);
+			switch (dacclr++)
+			{
+			case 0:
+				ret = (BYTE)(retRGB.rgbRed >> 2);
+				break;
+			case 1:
+				ret = (BYTE)(retRGB.rgbGreen >> 2);
+				break;
+			case 2:
+				ret = (BYTE)(retRGB.rgbBlue >> 2);
+				dacclr = 0;
+				break;
+			}
+			break;
+		}
         case 0x3da:
         {
             start_retrace_timer();
@@ -241,11 +262,13 @@ static void WINAPI ddVGAoutHandler(int port, int size, DWORD value)
 
     if ((port & ~3) != 0x3c8) start_retrace_timer();
 
-    static BYTE dacidx;
     static BYTE dacclr = 0;
 
     switch (port)
     {
+		case 0x3c7:
+			dacidx = value & 0xff;
+			break;
         case 0x3c8:
             dacidx = value & 0xff;
             dacclr = 0;
